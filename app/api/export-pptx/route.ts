@@ -4,7 +4,7 @@ import type { BiblePassage } from "@/types";
 
 /** 表示設定（管理画面の表示設定をPPTに反映） */
 export type PptxDisplayOptions = {
-  theme: "dark" | "light";
+  theme: "dark" | "light" | "navy" | "forest" | "wine" | "sepia";
   fontScale: number;
   fontFamily: "sans" | "serif" | "mincho" | "gothic" | "notoSans";
   textAlign: "left" | "center";
@@ -27,6 +27,19 @@ const FONT_FACE_MAP: Record<PptxDisplayOptions["fontFamily"], string> = {
   notoSans: "Noto Sans JP",
 };
 
+/** テーマごとのPPTスライド色（背景・ヘッダー・本文、#なしhex） */
+const THEME_COLORS: Record<
+  PptxDisplayOptions["theme"],
+  { bg: string; header: string; body: string }
+> = {
+  dark: { bg: "000000", header: "b3b3b3", body: "ffffff" },
+  light: { bg: "f5f5f4", header: "57534e", body: "1c1917" },
+  navy: { bg: "0f172a", header: "94a3b8", body: "f1f5f9" },
+  forest: { bg: "0f2e1a", header: "a7f3d0", body: "ecfdf5" },
+  wine: { bg: "451a1a", header: "fecdd3", body: "fff1f2" },
+  sepia: { bg: "f5f0e6", header: "78716c", body: "292524" },
+};
+
 function buildPptx(
   passages: BiblePassage[],
   display: PptxDisplayOptions = DEFAULT_PPTX_DISPLAY
@@ -36,10 +49,10 @@ function buildPptx(
   pptx.author = "Bible Presenter";
   pptx.title = "御言葉";
 
-  const isDark = display.theme === "dark";
-  const bgColor = isDark ? "000000" : "f5f5f4";
-  const headerColor = isDark ? "b3b3b3" : "57534e";
-  const bodyColor = isDark ? "ffffff" : "1c1917";
+  const colors = THEME_COLORS[display.theme];
+  const bgColor = colors.bg;
+  const headerColor = colors.header;
+  const bodyColor = colors.body;
 
   const headerFontSize = Math.round(18 * display.fontScale);
   const bodyFontSize = Math.round(28 * display.fontScale);
@@ -98,7 +111,17 @@ export async function POST(request: Request) {
 
     let display: PptxDisplayOptions = { ...DEFAULT_PPTX_DISPLAY };
     if (rawDisplay && typeof rawDisplay === "object") {
-      if (rawDisplay.theme === "dark" || rawDisplay.theme === "light") display.theme = rawDisplay.theme;
+      const themeVal = rawDisplay.theme;
+      if (
+        themeVal === "dark" ||
+        themeVal === "light" ||
+        themeVal === "navy" ||
+        themeVal === "forest" ||
+        themeVal === "wine" ||
+        themeVal === "sepia"
+      ) {
+        display.theme = themeVal;
+      }
       if (typeof rawDisplay.fontScale === "number" && rawDisplay.fontScale >= 0.5 && rawDisplay.fontScale <= 2) {
         display.fontScale = rawDisplay.fontScale;
       }

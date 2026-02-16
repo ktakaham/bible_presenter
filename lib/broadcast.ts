@@ -7,7 +7,7 @@ export type DisplaySettingsPayload = {
   fontScale?: number;
   fontFamily?: "sans" | "serif" | "mincho" | "gothic" | "notoSans";
   lineHeight?: number;
-  theme?: "dark" | "light";
+  theme?: "dark" | "light" | "navy" | "forest" | "wine" | "sepia";
   textAlign?: "left" | "center";
   verticalAlign?: "top" | "middle" | "bottom";
 };

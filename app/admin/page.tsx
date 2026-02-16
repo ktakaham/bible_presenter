@@ -441,6 +441,10 @@ export default function AdminPage() {
                         >
                           <option value="dark">ダーク</option>
                           <option value="light">ライト</option>
+                          <option value="navy">ネイビー</option>
+                          <option value="forest">フォレスト</option>
+                          <option value="wine">ワイン</option>
+                          <option value="sepia">セピア</option>
                         </select>
                       </div>
                       <div>
@@ -812,8 +816,12 @@ export default function AdminPage() {
                   }
                   className="w-full min-h-[48px] border border-stone-300 rounded-lg px-4 py-2.5 text-base text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-400"
                 >
-                  <option value="dark">ダークモード</option>
-                  <option value="light">ライトモード</option>
+                  <option value="dark">ダーク</option>
+                  <option value="light">ライト</option>
+                  <option value="navy">ネイビー</option>
+                  <option value="forest">フォレスト</option>
+                  <option value="wine">ワイン</option>
+                  <option value="sepia">セピア</option>
                 </select>
               </div>
               <div>

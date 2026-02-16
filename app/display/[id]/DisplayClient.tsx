@@ -41,6 +41,55 @@ import type { BiblePassage } from "@/types";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+/** テーマごとの背景・文字・フッター用クラス（Tailwind JIT用に完全な文字列で定義） */
+const THEME_PALETTE: Record<
+  DisplayTheme,
+  { bg: string; text: string; muted: string; footer: string; isDark: boolean }
+> = {
+  dark: {
+    bg: "bg-black",
+    text: "text-white",
+    muted: "text-white/80",
+    footer: "text-white/40",
+    isDark: true,
+  },
+  light: {
+    bg: "bg-stone-100",
+    text: "text-stone-900",
+    muted: "text-stone-600",
+    footer: "text-stone-400",
+    isDark: false,
+  },
+  navy: {
+    bg: "bg-[#0f172a]",
+    text: "text-[#f1f5f9]",
+    muted: "text-[#94a3b8]",
+    footer: "text-[#64748b]",
+    isDark: true,
+  },
+  forest: {
+    bg: "bg-[#0f2e1a]",
+    text: "text-[#ecfdf5]",
+    muted: "text-[#a7f3d0]",
+    footer: "text-[#059669]",
+    isDark: true,
+  },
+  wine: {
+    bg: "bg-[#451a1a]",
+    text: "text-[#fff1f2]",
+    muted: "text-[#fecdd3]",
+    footer: "text-[#be123c]",
+    isDark: true,
+  },
+  sepia: {
+    bg: "bg-[#f5f0e6]",
+    text: "text-[#292524]",
+    muted: "text-[#78716c]",
+    footer: "text-[#57534e]",
+    isDark: false,
+  },
+};
+
 interface DisplayClientProps {
   passage: BiblePassage;
   passageId: string;
@@ -113,7 +162,14 @@ export default function DisplayClient({
         setLineHeightState(v);
         setStoredLineHeight(v);
       }
-      if (p.theme === "dark" || p.theme === "light") {
+      if (
+        p.theme === "dark" ||
+        p.theme === "light" ||
+        p.theme === "navy" ||
+        p.theme === "forest" ||
+        p.theme === "wine" ||
+        p.theme === "sepia"
+      ) {
         setThemeState(p.theme);
         setStoredTheme(p.theme);
       }
@@ -242,11 +298,12 @@ export default function DisplayClient({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isFullscreen, prevId, nextId, router, goPrev, goNext, fontScale, setFontScale, theme, setTheme]);
 
-  const isDark = theme === "dark";
-  const bgClass = isDark ? "bg-black" : "bg-stone-100";
-  const textClass = isDark ? "text-white" : "text-stone-900";
-  const mutedClass = isDark ? "text-white/80" : "text-stone-600";
-  const footerClass = isDark ? "text-white/40" : "text-stone-400";
+  const palette = THEME_PALETTE[theme];
+  const isDark = palette.isDark;
+  const bgClass = palette.bg;
+  const textClass = palette.text;
+  const mutedClass = palette.muted;
+  const footerClass = palette.footer;
 
   const baseFontSize = "clamp(2.5rem, 6vw, 10rem)";
   const scaledFontSize = `calc(${baseFontSize} * ${fontScale})`;

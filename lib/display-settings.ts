@@ -8,7 +8,22 @@ const KEY_LINE_HEIGHT = "bible-display-line-height";
 const KEY_TEXT_ALIGN = "bible-display-text-align";
 const KEY_VERTICAL_ALIGN = "bible-display-vertical-align";
 
-export type DisplayTheme = "dark" | "light";
+export type DisplayTheme =
+  | "dark"
+  | "light"
+  | "navy"
+  | "forest"
+  | "wine"
+  | "sepia";
+
+const DISPLAY_THEMES: DisplayTheme[] = [
+  "dark",
+  "light",
+  "navy",
+  "forest",
+  "wine",
+  "sepia",
+];
 
 /** 表示比率 */
 export type AspectRatioId = "19:6" | "4:3" | "16:9";
@@ -61,7 +76,7 @@ export function setStoredFontScale(scale: number): void {
 export function getStoredTheme(): DisplayTheme {
   if (typeof window === "undefined") return "dark";
   const v = localStorage.getItem(KEY_THEME);
-  if (v === "dark" || v === "light") return v;
+  if (DISPLAY_THEMES.includes(v as DisplayTheme)) return v as DisplayTheme;
   return "dark";
 }
 
@@ -163,4 +178,5 @@ export {
   FONT_FAMILIES,
   TEXT_ALIGN_IDS,
   VERTICAL_ALIGN_IDS,
+  DISPLAY_THEMES,
 };
