@@ -19,6 +19,7 @@ import {
   getStoredLineHeight,
   getStoredTheme,
   getStoredTextAlign,
+  getStoredVerticalAlign,
   MAX_LINE_HEIGHT,
   MAX_SCALE,
   MIN_LINE_HEIGHT,
@@ -29,10 +30,12 @@ import {
   setStoredLineHeight,
   setStoredTheme,
   setStoredTextAlign,
+  setStoredVerticalAlign,
   type AspectRatioId,
   type DisplayTheme,
   type FontFamilyId,
   type TextAlignId,
+  type VerticalAlignId,
 } from "@/lib/display-settings";
 import type { BiblePassage } from "@/types";
 import { useRouter } from "next/navigation";
@@ -67,6 +70,7 @@ export default function DisplayClient({
   const [fontFamily, setFontFamilyState] = useState<FontFamilyId>(DEFAULT_FONT_FAMILY);
   const [lineHeight, setLineHeightState] = useState(DEFAULT_LINE_HEIGHT);
   const [textAlign, setTextAlignState] = useState<TextAlignId>(DEFAULT_TEXT_ALIGN);
+  const [verticalAlign, setVerticalAlignState] = useState<VerticalAlignId>("middle");
 
   useEffect(() => {
     setFontScaleState(getStoredFontScale());
@@ -75,6 +79,7 @@ export default function DisplayClient({
     setFontFamilyState(getStoredFontFamily());
     setLineHeightState(getStoredLineHeight());
     setTextAlignState(getStoredTextAlign());
+    setVerticalAlignState(getStoredVerticalAlign());
   }, []);
 
   const verse = passage.verses[currentIndex];
@@ -115,6 +120,10 @@ export default function DisplayClient({
       if (p.textAlign === "left" || p.textAlign === "center") {
         setTextAlignState(p.textAlign);
         setStoredTextAlign(p.textAlign);
+      }
+      if (p.verticalAlign === "top" || p.verticalAlign === "middle" || p.verticalAlign === "bottom") {
+        setVerticalAlignState(p.verticalAlign);
+        setStoredVerticalAlign(p.verticalAlign);
       }
     };
     ch.addEventListener("message", handler);
@@ -259,11 +268,17 @@ export default function DisplayClient({
       className={`fixed inset-0 ${bgClass} flex flex-col items-center justify-center overflow-hidden select-none`}
     >
       <div
-        className="flex flex-col items-center justify-center"
+        className={`flex flex-col items-center w-full flex-1 ${
+          verticalAlign === "top"
+            ? "justify-start pt-[6vh]"
+            : verticalAlign === "bottom"
+              ? "justify-end"
+              : "justify-center"
+        }`}
         style={aspectBoxStyle}
       >
         <div
-          className={`${textClass} px-[5vw] max-w-[90vw] flex flex-col justify-center ${
+          className={`${textClass} px-[5vw] max-w-[90vw] flex flex-col ${
             textAlign === "center"
               ? "text-center items-center"
               : "text-left items-start"

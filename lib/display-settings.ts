@@ -6,6 +6,7 @@ const KEY_ASPECT_RATIO = "bible-display-aspect-ratio";
 const KEY_FONT_FAMILY = "bible-display-font-family";
 const KEY_LINE_HEIGHT = "bible-display-line-height";
 const KEY_TEXT_ALIGN = "bible-display-text-align";
+const KEY_VERTICAL_ALIGN = "bible-display-vertical-align";
 
 export type DisplayTheme = "dark" | "light";
 
@@ -32,10 +33,15 @@ export type FontFamilyId =
   | "gothic"
   | "notoSans";
 
-/** 御言葉の配置 */
+/** 御言葉の配置（横） */
 export type TextAlignId = "left" | "center";
 const TEXT_ALIGN_IDS: TextAlignId[] = ["left", "center"];
 const DEFAULT_TEXT_ALIGN: TextAlignId = "left";
+
+/** 御言葉の配置（縦） */
+export type VerticalAlignId = "top" | "middle" | "bottom";
+const VERTICAL_ALIGN_IDS: VerticalAlignId[] = ["top", "middle", "bottom"];
+const DEFAULT_VERTICAL_ALIGN: VerticalAlignId = "middle";
 
 const FONT_FAMILIES: FontFamilyId[] = ["sans", "serif", "mincho", "gothic", "notoSans"];
 const DEFAULT_FONT_FAMILY: FontFamilyId = "sans";
@@ -109,6 +115,17 @@ export function setStoredTextAlign(align: TextAlignId): void {
   localStorage.setItem(KEY_TEXT_ALIGN, align);
 }
 
+export function getStoredVerticalAlign(): VerticalAlignId {
+  if (typeof window === "undefined") return DEFAULT_VERTICAL_ALIGN;
+  const v = localStorage.getItem(KEY_VERTICAL_ALIGN);
+  if (v === "top" || v === "middle" || v === "bottom") return v;
+  return DEFAULT_VERTICAL_ALIGN;
+}
+
+export function setStoredVerticalAlign(align: VerticalAlignId): void {
+  localStorage.setItem(KEY_VERTICAL_ALIGN, align);
+}
+
 /** CSS用: 比率を aspect-ratio の分数に */
 export function aspectRatioToCss(ratio: AspectRatioId): string {
   const map: Record<AspectRatioId, string> = {
@@ -141,7 +158,9 @@ export {
   DEFAULT_ASPECT_RATIO,
   DEFAULT_FONT_FAMILY,
   DEFAULT_TEXT_ALIGN,
+  DEFAULT_VERTICAL_ALIGN,
   ASPECT_RATIOS,
   FONT_FAMILIES,
   TEXT_ALIGN_IDS,
+  VERTICAL_ALIGN_IDS,
 };

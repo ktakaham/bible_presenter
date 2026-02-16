@@ -14,12 +14,14 @@ import {
   DEFAULT_LINE_HEIGHT,
   DEFAULT_SCALE,
   DEFAULT_TEXT_ALIGN,
+  DEFAULT_VERTICAL_ALIGN,
   getStoredAspectRatio,
   getStoredFontFamily,
   getStoredFontScale,
   getStoredLineHeight,
   getStoredTextAlign,
   getStoredTheme,
+  getStoredVerticalAlign,
   MAX_LINE_HEIGHT,
   MAX_SCALE,
   MIN_LINE_HEIGHT,
@@ -30,10 +32,12 @@ import {
   setStoredLineHeight,
   setStoredTextAlign,
   setStoredTheme,
+  setStoredVerticalAlign,
   type AspectRatioId,
   type DisplayTheme,
   type FontFamilyId,
   type TextAlignId,
+  type VerticalAlignId,
 } from "@/lib/display-settings";
 import { parseBibleInput } from "@/lib/parser";
 import { getPassages, setPassages as savePassages } from "@/lib/passage-storage-client";
@@ -63,7 +67,12 @@ export default function AdminPage() {
   const [lineHeight, setLineHeight] = useState(DEFAULT_LINE_HEIGHT);
   const [theme, setTheme] = useState<DisplayTheme>("dark");
   const [textAlign, setTextAlign] = useState<TextAlignId>(DEFAULT_TEXT_ALIGN);
+  const [verticalAlign, setVerticalAlign] = useState<VerticalAlignId>(DEFAULT_VERTICAL_ALIGN);
   const [activeTab, setActiveTab] = useState<"switch" | "register" | "settings">("switch");
+  const [pptxDownloading, setPptxDownloading] = useState(false);
+  const [pptxSelectOpen, setPptxSelectOpen] = useState(false);
+  /** 箇所ID -> 選択した節のインデックス（0始まり） */
+  const [pptxSelectedVerses, setPptxSelectedVerses] = useState<Map<string, Set<number>>>(new Map());
 
   useEffect(() => {
     setAspectRatio(getStoredAspectRatio());
@@ -72,6 +81,7 @@ export default function AdminPage() {
     setLineHeight(getStoredLineHeight());
     setTheme(getStoredTheme());
     setTextAlign(getStoredTextAlign());
+    setVerticalAlign(getStoredVerticalAlign());
   }, []);
 
   useEffect(() => {
@@ -136,6 +146,11 @@ export default function AdminPage() {
     setTextAlign(a);
     setStoredTextAlign(a);
     sendDisplaySettings({ textAlign: a });
+  };
+  const handleVerticalAlign = (a: VerticalAlignId) => {
+    setVerticalAlign(a);
+    setStoredVerticalAlign(a);
+    sendDisplaySettings({ verticalAlign: a });
   };
 
   const handleShowVerse = (passageId: string, verseIndex: number) => {
@@ -319,9 +334,200 @@ export default function AdminPage() {
                 クリップボードにコピーできませんでした
               </div>
             )}
-            <h2 className="text-base sm:text-lg font-medium text-stone-600 mb-4">
-              登録済み聖書箇所
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="text-base sm:text-lg font-medium text-stone-600">
+                登録済み聖書箇所
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  if (passages.length === 0) return;
+                  setPptxSelectOpen(true);
+                  setPptxSelectedVerses(
+                    new Map(
+                      passages.map((p) => [
+                        p.id,
+                        new Set(p.verses.map((_, i) => i)),
+                      ])
+                    )
+                  );
+                }}
+                disabled={passages.length === 0}
+                className="min-h-[44px] text-sm sm:text-base px-4 py-2.5 border border-stone-300 rounded-lg bg-white hover:bg-stone-50 text-stone-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                PPTでダウンロード
+              </button>
+            </div>
+
+            {/* PPT 節選択モーダル */}
+            {pptxSelectOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+                <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col">
+                  <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-stone-800">
+                      PPTに含める節を選択
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setPptxSelectOpen(false)}
+                      className="p-2 text-stone-500 hover:text-stone-700 rounded"
+                      aria-label="閉じる"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="p-4 flex gap-2 border-b border-stone-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPptxSelectedVerses(
+                          new Map(
+                            passages.map((p) => [
+                              p.id,
+                              new Set(p.verses.map((_, i) => i)),
+                            ])
+                          )
+                        );
+                      }}
+                      className="text-sm px-3 py-1.5 border border-stone-300 rounded-lg hover:bg-stone-50"
+                    >
+                      全選択
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPptxSelectedVerses(new Map())}
+                      className="text-sm px-3 py-1.5 border border-stone-300 rounded-lg hover:bg-stone-50"
+                    >
+                      解除
+                    </button>
+                  </div>
+                  <div className="overflow-y-auto p-4 space-y-4 flex-1">
+                    {passages.map((p) => {
+                      const indices = pptxSelectedVerses.get(p.id) ?? new Set<number>();
+                      const allSelected = p.verses.length > 0 && indices.size === p.verses.length;
+                      const someSelected = indices.size > 0;
+                      return (
+                        <div
+                          key={p.id}
+                          className="rounded-lg border border-stone-200 overflow-hidden"
+                        >
+                          <label className="flex items-center gap-3 p-3 bg-stone-50 hover:bg-stone-100 cursor-pointer border-b border-stone-200">
+                            <input
+                              type="checkbox"
+                              checked={allSelected}
+                              onChange={(e) => {
+                                setPptxSelectedVerses((prev) => {
+                                  const next = new Map(prev);
+                                  if (e.target.checked) {
+                                    next.set(p.id, new Set(p.verses.map((_, i) => i)));
+                                  } else {
+                                    next.delete(p.id);
+                                  }
+                                  return next;
+                                });
+                              }}
+                              className="w-5 h-5 rounded border-stone-300"
+                            />
+                            <span className="font-medium text-stone-800">
+                              {p.book} {p.chapter}章
+                            </span>
+                            <span className="text-stone-500 text-sm">
+                              （この箇所全体・{p.verses.length}節）
+                            </span>
+                          </label>
+                          <div className="p-3 pt-2 flex flex-wrap gap-2">
+                            {p.verses.map((v, i) => (
+                              <label
+                                key={`${p.id}-${i}`}
+                                className="inline-flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={indices.has(i)}
+                                  onChange={(e) => {
+                                    setPptxSelectedVerses((prev) => {
+                                      const next = new Map(prev);
+                                      const set = new Set(next.get(p.id) ?? []);
+                                      if (e.target.checked) set.add(i);
+                                      else set.delete(i);
+                                      if (set.size > 0) next.set(p.id, set);
+                                      else next.delete(p.id);
+                                      return next;
+                                    });
+                                  }}
+                                  className="w-4 h-4 rounded border-stone-300"
+                                />
+                                <span className="text-sm text-stone-700">{v.number}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="p-4 border-t border-stone-200 flex gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setPptxSelectOpen(false)}
+                      className="min-h-[44px] px-4 py-2 border border-stone-300 rounded-lg hover:bg-stone-50"
+                    >
+                      キャンセル
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const selected: BiblePassage[] = [];
+                        for (const p of passages) {
+                          const indices = pptxSelectedVerses.get(p.id);
+                          if (!indices || indices.size === 0) continue;
+                          const verses = p.verses.filter((_, i) => indices.has(i));
+                          selected.push({ ...p, verses });
+                        }
+                        const totalVerses = selected.reduce((s, p) => s + p.verses.length, 0);
+                        if (totalVerses === 0) {
+                          setError("1つ以上節を選択してください");
+                          return;
+                        }
+                        setPptxDownloading(true);
+                        setError(null);
+                        try {
+                          const res = await fetch("/api/export-pptx", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ passages: selected }),
+                          });
+                          if (!res.ok) {
+                            const data = await res.json().catch(() => ({}));
+                            throw new Error(data.error ?? "ダウンロードに失敗しました");
+                          }
+                          const blob = await res.blob();
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `御言葉_${new Date().toISOString().slice(0, 10)}.pptx`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          setPptxSelectOpen(false);
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : "PPTのダウンロードに失敗しました");
+                        } finally {
+                          setPptxDownloading(false);
+                        }
+                      }}
+                      disabled={
+                        (Array.from(pptxSelectedVerses.values()).reduce(
+                          (s, set) => s + set.size,
+                          0
+                        ) === 0) || pptxDownloading
+                      }
+                      className="min-h-[44px] px-5 py-2 bg-stone-800 text-white rounded-lg hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {pptxDownloading ? "作成中…" : "選択した節でPPTを生成"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             {loading ? (
               <p className="text-stone-500 text-base">読み込み中…</p>
             ) : passages.length === 0 ? (
@@ -518,7 +724,7 @@ export default function AdminPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-stone-600 mb-2">御言葉の配置</label>
+                <label className="block text-sm font-medium text-stone-600 mb-2">御言葉の配置（横）</label>
                 <select
                   value={textAlign}
                   onChange={(e) =>
@@ -528,6 +734,20 @@ export default function AdminPage() {
                 >
                   <option value="left">左寄せ</option>
                   <option value="center">中央寄せ</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-2">御言葉の配置（縦）</label>
+                <select
+                  value={verticalAlign}
+                  onChange={(e) =>
+                    handleVerticalAlign(e.target.value as VerticalAlignId)
+                  }
+                  className="w-full min-h-[48px] border border-stone-300 rounded-lg px-4 py-2.5 text-base text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-400"
+                >
+                  <option value="top">上寄せ</option>
+                  <option value="middle">中央寄せ</option>
+                  <option value="bottom">下寄せ</option>
                 </select>
               </div>
               <div className="sm:col-span-2 lg:col-span-1">

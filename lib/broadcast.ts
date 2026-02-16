@@ -9,6 +9,7 @@ export type DisplaySettingsPayload = {
   lineHeight?: number;
   theme?: "dark" | "light";
   textAlign?: "left" | "center";
+  verticalAlign?: "top" | "middle" | "bottom";
 };
 
 export type BroadcastMessage =
