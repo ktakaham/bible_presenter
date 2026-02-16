@@ -494,7 +494,16 @@ export default function AdminPage() {
                           const res = await fetch("/api/export-pptx", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ passages: selected }),
+                            body: JSON.stringify({
+                              passages: selected,
+                              display: {
+                                theme,
+                                fontScale,
+                                fontFamily,
+                                textAlign,
+                                verticalAlign,
+                              },
+                            }),
                           });
                           if (!res.ok) {
                             const data = await res.json().catch(() => ({}));
