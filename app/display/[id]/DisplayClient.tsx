@@ -11,12 +11,14 @@ import {
   DEFAULT_FONT_FAMILY,
   DEFAULT_LINE_HEIGHT,
   DEFAULT_SCALE,
+  DEFAULT_TEXT_ALIGN,
   fontFamilyToCss,
   getStoredAspectRatio,
   getStoredFontFamily,
   getStoredFontScale,
   getStoredLineHeight,
   getStoredTheme,
+  getStoredTextAlign,
   MAX_LINE_HEIGHT,
   MAX_SCALE,
   MIN_LINE_HEIGHT,
@@ -26,9 +28,11 @@ import {
   setStoredFontScale,
   setStoredLineHeight,
   setStoredTheme,
+  setStoredTextAlign,
   type AspectRatioId,
   type DisplayTheme,
   type FontFamilyId,
+  type TextAlignId,
 } from "@/lib/display-settings";
 import type { BiblePassage } from "@/types";
 import { useRouter } from "next/navigation";
@@ -62,6 +66,7 @@ export default function DisplayClient({
   const [aspectRatio, setAspectRatioState] = useState<AspectRatioId>(DEFAULT_ASPECT_RATIO);
   const [fontFamily, setFontFamilyState] = useState<FontFamilyId>(DEFAULT_FONT_FAMILY);
   const [lineHeight, setLineHeightState] = useState(DEFAULT_LINE_HEIGHT);
+  const [textAlign, setTextAlignState] = useState<TextAlignId>(DEFAULT_TEXT_ALIGN);
 
   useEffect(() => {
     setFontScaleState(getStoredFontScale());
@@ -69,6 +74,7 @@ export default function DisplayClient({
     setAspectRatioState(getStoredAspectRatio());
     setFontFamilyState(getStoredFontFamily());
     setLineHeightState(getStoredLineHeight());
+    setTextAlignState(getStoredTextAlign());
   }, []);
 
   const verse = passage.verses[currentIndex];
@@ -105,6 +111,10 @@ export default function DisplayClient({
       if (p.theme === "dark" || p.theme === "light") {
         setThemeState(p.theme);
         setStoredTheme(p.theme);
+      }
+      if (p.textAlign === "left" || p.textAlign === "center") {
+        setTextAlignState(p.textAlign);
+        setStoredTextAlign(p.textAlign);
       }
     };
     ch.addEventListener("message", handler);
@@ -189,11 +199,19 @@ export default function DisplayClient({
         return;
       }
       if (e.key === "ArrowLeft") {
-        goPrev();
+        if (prevId) {
+          router.push(`/display/${prevId}`);
+        } else {
+          goPrev();
+        }
         return;
       }
       if (e.key === "ArrowRight") {
-        goNext();
+        if (nextId) {
+          router.push(`/display/${nextId}`);
+        } else {
+          goNext();
+        }
         return;
       }
       if (e.key === "+" || e.key === "=") {
@@ -213,7 +231,7 @@ export default function DisplayClient({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFullscreen, goPrev, goNext, fontScale, setFontScale, theme, setTheme]);
+  }, [isFullscreen, prevId, nextId, router, goPrev, goNext, fontScale, setFontScale, theme, setTheme]);
 
   const isDark = theme === "dark";
   const bgClass = isDark ? "bg-black" : "bg-stone-100";
@@ -245,14 +263,18 @@ export default function DisplayClient({
         style={aspectBoxStyle}
       >
         <div
-          className={`${textClass} text-center px-[5vw] max-w-[90vw] flex flex-col items-center justify-center`}
+          className={`${textClass} px-[5vw] max-w-[90vw] flex flex-col justify-center ${
+            textAlign === "center"
+              ? "text-center items-center"
+              : "text-left items-start"
+          }`}
           style={{
             fontSize: scaledFontSize,
             fontFamily: fontCss,
             lineHeight: lineHeight,
           }}
         >
-          <p className={`${mutedClass} text-[0.35em] mb-[0.5em] tracking-wide`}>
+          <p className={`${mutedClass} text-[0.5em] mb-[0.5em] tracking-wide`}>
             {passage.book} {passage.chapter}章
           </p>
           <p className="font-light">

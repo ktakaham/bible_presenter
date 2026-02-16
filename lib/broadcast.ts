@@ -8,6 +8,7 @@ export type DisplaySettingsPayload = {
   fontFamily?: "sans" | "serif" | "mincho" | "gothic" | "notoSans";
   lineHeight?: number;
   theme?: "dark" | "light";
+  textAlign?: "left" | "center";
 };
 
 export type BroadcastMessage =

@@ -10,8 +10,9 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "聖書表示アプリ",
-  description: "礼拝用・聖書箇所の全画面表示",
+  title: "聖書表示アプリ | Bible Presenter",
+  description:
+    "礼拝・集会で御言葉を大きく表示。登録した聖書箇所を全画面で映し、前後切り替えも簡単。ブラウザだけで使える聖書表示アプリです。",
 };
 
 export default function RootLayout({
