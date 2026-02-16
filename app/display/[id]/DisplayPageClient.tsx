@@ -65,7 +65,7 @@ export default function DisplayPageClient() {
   return (
     <DisplayClient
       passage={passage}
-      passageId={id}
+      passageId={passage.id}
       initialVerseIndex={initialVerseIndex}
       prevId={prevId}
       nextId={nextId}
