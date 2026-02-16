@@ -73,6 +73,20 @@ export default function AdminPage() {
   const [pptxSelectOpen, setPptxSelectOpen] = useState(false);
   /** 箇所ID -> 選択した節のインデックス（0始まり） */
   const [pptxSelectedVerses, setPptxSelectedVerses] = useState<Map<string, Set<number>>>(new Map());
+  /** モーダル内のPPT用表示設定（モーダルを開いた時点の表示設定で初期化） */
+  const [pptxDisplay, setPptxDisplay] = useState<{
+    theme: DisplayTheme;
+    fontScale: number;
+    fontFamily: FontFamilyId;
+    textAlign: TextAlignId;
+    verticalAlign: VerticalAlignId;
+  }>({
+    theme: "light",
+    fontScale: DEFAULT_SCALE,
+    fontFamily: DEFAULT_FONT_FAMILY,
+    textAlign: DEFAULT_TEXT_ALIGN,
+    verticalAlign: DEFAULT_VERTICAL_ALIGN,
+  });
 
   useEffect(() => {
     setAspectRatio(getStoredAspectRatio());
@@ -342,6 +356,13 @@ export default function AdminPage() {
                 type="button"
                 onClick={() => {
                   if (passages.length === 0) return;
+                  setPptxDisplay({
+                    theme,
+                    fontScale,
+                    fontFamily,
+                    textAlign,
+                    verticalAlign,
+                  });
                   setPptxSelectOpen(true);
                   setPptxSelectedVerses(
                     new Map(
@@ -401,6 +422,101 @@ export default function AdminPage() {
                       解除
                     </button>
                   </div>
+
+                  {/* PPT用表示設定 */}
+                  <div className="p-4 border-b border-stone-200 bg-stone-50/80 space-y-3">
+                    <p className="text-sm font-medium text-stone-700">PPTの表示設定</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs text-stone-500 mb-1">テーマ</label>
+                        <select
+                          value={pptxDisplay.theme}
+                          onChange={(e) =>
+                            setPptxDisplay((d) => ({
+                              ...d,
+                              theme: e.target.value as DisplayTheme,
+                            }))
+                          }
+                          className="w-full min-h-[40px] border border-stone-300 rounded-lg px-2 py-1.5 text-sm text-stone-800 bg-white"
+                        >
+                          <option value="dark">ダーク</option>
+                          <option value="light">ライト</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-stone-500 mb-1">
+                          文字サイズ（{(pptxDisplay.fontScale * 100).toFixed(0)}%）
+                        </label>
+                        <input
+                          type="range"
+                          min={MIN_SCALE}
+                          max={MAX_SCALE}
+                          step={0.1}
+                          value={pptxDisplay.fontScale}
+                          onChange={(e) =>
+                            setPptxDisplay((d) => ({
+                              ...d,
+                              fontScale: parseFloat(e.target.value),
+                            }))
+                          }
+                          className="w-full h-9 accent-stone-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-stone-500 mb-1">フォント</label>
+                        <select
+                          value={pptxDisplay.fontFamily}
+                          onChange={(e) =>
+                            setPptxDisplay((d) => ({
+                              ...d,
+                              fontFamily: e.target.value as FontFamilyId,
+                            }))
+                          }
+                          className="w-full min-h-[40px] border border-stone-300 rounded-lg px-2 py-1.5 text-sm text-stone-800 bg-white"
+                        >
+                          <option value="sans">ゴシック（標準）</option>
+                          <option value="gothic">ゴシック（角ゴ）</option>
+                          <option value="mincho">明朝</option>
+                          <option value="serif">セリフ</option>
+                          <option value="notoSans">Noto Sans JP</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-stone-500 mb-1">配置（横）</label>
+                        <select
+                          value={pptxDisplay.textAlign}
+                          onChange={(e) =>
+                            setPptxDisplay((d) => ({
+                              ...d,
+                              textAlign: e.target.value as TextAlignId,
+                            }))
+                          }
+                          className="w-full min-h-[40px] border border-stone-300 rounded-lg px-2 py-1.5 text-sm text-stone-800 bg-white"
+                        >
+                          <option value="left">左寄せ</option>
+                          <option value="center">中央寄せ</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-stone-500 mb-1">配置（縦）</label>
+                        <select
+                          value={pptxDisplay.verticalAlign}
+                          onChange={(e) =>
+                            setPptxDisplay((d) => ({
+                              ...d,
+                              verticalAlign: e.target.value as VerticalAlignId,
+                            }))
+                          }
+                          className="w-full min-h-[40px] border border-stone-300 rounded-lg px-2 py-1.5 text-sm text-stone-800 bg-white"
+                        >
+                          <option value="top">上寄せ</option>
+                          <option value="middle">中央寄せ</option>
+                          <option value="bottom">下寄せ</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="overflow-y-auto p-4 space-y-4 flex-1">
                     {passages.map((p) => {
                       const indices = pptxSelectedVerses.get(p.id) ?? new Set<number>();
@@ -497,11 +613,11 @@ export default function AdminPage() {
                             body: JSON.stringify({
                               passages: selected,
                               display: {
-                                theme,
-                                fontScale,
-                                fontFamily,
-                                textAlign,
-                                verticalAlign,
+                                theme: pptxDisplay.theme,
+                                fontScale: pptxDisplay.fontScale,
+                                fontFamily: pptxDisplay.fontFamily,
+                                textAlign: pptxDisplay.textAlign,
+                                verticalAlign: pptxDisplay.verticalAlign,
                               },
                             }),
                           });
