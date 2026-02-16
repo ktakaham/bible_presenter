@@ -206,7 +206,7 @@ export default function HomePage() {
             href="/display"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full sm:w-auto min-h-[52px] inline-flex items-center justify-center px-8 py-4 bg-white border-2 border-stone-400 text-stone-800 text-base font-semibold rounded-xl hover:bg-stone-100 hover:border-stone-500 transition"
+            className="w-full sm:w-auto min-h-[52px] inline-flex items-center justify-center px-8 py-4 bg-stone-700 text-white border-2 border-stone-700 text-base font-semibold rounded-xl hover:bg-stone-600 hover:border-stone-600 transition shadow-md ring-2 ring-stone-400/50 ring-offset-2 ring-offset-page"
           >
             表示用ウィンドウを開く
           </Link>
