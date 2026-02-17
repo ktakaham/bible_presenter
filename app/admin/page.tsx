@@ -74,6 +74,8 @@ export default function AdminPage() {
   const [pptxSelectOpen, setPptxSelectOpen] = useState(false);
   /** 表示画面のブラックアウト状態（BLACKOUT_STATE で同期） */
   const [blackoutOn, setBlackoutOn] = useState(false);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [shareGenerating, setShareGenerating] = useState(false);
   /** 箇所ID -> 選択した節のインデックス（0始まり） */
   const [pptxSelectedVerses, setPptxSelectedVerses] = useState<Map<string, Set<number>>>(new Map());
   /** モーダル内のPPT用表示設定（モーダルを開いた時点の表示設定で初期化） */
@@ -375,33 +377,101 @@ export default function AdminPage() {
               <h2 className="text-base sm:text-lg font-medium text-stone-600">
                 登録済み聖書箇所
               </h2>
-              <button
-                type="button"
-                onClick={() => {
-                  if (passages.length === 0) return;
-                  setPptxDisplay({
-                    theme,
-                    fontScale,
-                    fontFamily,
-                    textAlign,
-                    verticalAlign,
-                  });
-                  setPptxSelectOpen(true);
-                  setPptxSelectedVerses(
-                    new Map(
-                      passages.map((p) => [
-                        p.id,
-                        new Set(p.verses.map((_, i) => i)),
-                      ])
-                    )
-                  );
-                }}
-                disabled={passages.length === 0}
-                className="min-h-[44px] text-sm sm:text-base px-4 py-2.5 border border-stone-300 rounded-lg bg-white hover:bg-stone-50 text-stone-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                PPTでダウンロード
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (passages.length === 0) {
+                      setError("共有するデータがありません");
+                      return;
+                    }
+                    setShareGenerating(true);
+                    setError(null);
+                    try {
+                      const res = await fetch("/api/share", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ passages }),
+                      });
+                      if (!res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        throw new Error(data.error ?? "共有リンクの生成に失敗しました");
+                      }
+                      const { id } = await res.json();
+                      const url = `${window.location.origin}/share/${id}`;
+                      setShareLink(url);
+                      await navigator.clipboard.writeText(url);
+                      setCopyFeedback("共有リンクをコピーしました");
+                      setTimeout(() => setCopyFeedback(null), 3000);
+                    } catch (e) {
+                      setError(e instanceof Error ? e.message : "共有リンクの生成に失敗しました");
+                    } finally {
+                      setShareGenerating(false);
+                    }
+                  }}
+                  disabled={passages.length === 0 || shareGenerating}
+                  className="min-h-[44px] text-sm sm:text-base px-4 py-2.5 border border-stone-300 rounded-lg bg-white hover:bg-stone-50 text-stone-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {shareGenerating ? "生成中..." : "共有リンクを生成"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (passages.length === 0) return;
+                    setPptxDisplay({
+                      theme,
+                      fontScale,
+                      fontFamily,
+                      textAlign,
+                      verticalAlign,
+                    });
+                    setPptxSelectOpen(true);
+                    setPptxSelectedVerses(
+                      new Map(
+                        passages.map((p) => [
+                          p.id,
+                          new Set(p.verses.map((_, i) => i)),
+                        ])
+                      )
+                    );
+                  }}
+                  disabled={passages.length === 0}
+                  className="min-h-[44px] text-sm sm:text-base px-4 py-2.5 border border-stone-300 rounded-lg bg-white hover:bg-stone-50 text-stone-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  PPTでダウンロード
+                </button>
+              </div>
             </div>
+            {shareLink && (
+              <div className="mb-4 px-4 py-3 rounded-lg bg-blue-50 border border-blue-200">
+                <p className="text-sm text-blue-900 mb-2 font-medium">
+                  共有リンクが生成されました
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={shareLink}
+                    className="flex-1 px-3 py-2 text-sm border border-blue-300 rounded bg-white text-stone-800"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(shareLink);
+                      setCopyFeedback("リンクをコピーしました");
+                      setTimeout(() => setCopyFeedback(null), 2000);
+                    }}
+                    className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    コピー
+                  </button>
+                </div>
+                <p className="text-xs text-blue-700 mt-2">
+                  このリンクは1ヶ月（30日間）有効です。共有先でこのリンクを開くと、登録内容が読み込まれます。
+                </p>
+              </div>
+            )}
 
             {/* PPT 節選択モーダル */}
             {pptxSelectOpen && (
