@@ -18,7 +18,13 @@ export type BroadcastMessage =
   /** 表示画面 → 管理画面: 現在表示中の箇所・節 */
   | { type: "CURRENT_STATE"; passageId: string; verseIndex: number }
   /** 管理画面 → 表示画面: 表示設定 */
-  | { type: "DISPLAY_SETTINGS"; payload: DisplaySettingsPayload };
+  | { type: "DISPLAY_SETTINGS"; payload: DisplaySettingsPayload }
+  /** 管理画面 → 表示画面: ブラックアウト on/off */
+  | { type: "BLACKOUT"; on: boolean }
+  /** 表示画面 → 管理画面: ブラックアウト状態（トグル同期用） */
+  | { type: "BLACKOUT_STATE"; on: boolean }
+  /** 管理画面 → 表示画面: 全画面表示を要求 */
+  | { type: "REQUEST_FULLSCREEN" };
 
 export function getBroadcastChannel(): BroadcastChannel | null {
   if (typeof window === "undefined") return null;
@@ -70,4 +76,22 @@ export function sendDisplaySettings(payload: DisplaySettingsPayload): void {
     type: "DISPLAY_SETTINGS",
     payload,
   } satisfies BroadcastMessage);
+}
+
+/** 管理画面 → 表示画面: ブラックアウト（true=黒画面、false=表示に戻す） */
+export function sendBlackout(on: boolean): void {
+  const ch = getBroadcastChannel();
+  ch?.postMessage({ type: "BLACKOUT", on } satisfies BroadcastMessage);
+}
+
+/** 表示画面 → 管理画面: ブラックアウト状態を通知（管理画面のトグル表示同期用） */
+export function sendBlackoutState(on: boolean): void {
+  const ch = getBroadcastChannel();
+  ch?.postMessage({ type: "BLACKOUT_STATE", on } satisfies BroadcastMessage);
+}
+
+/** 管理画面 → 表示画面: 全画面表示を要求 */
+export function sendRequestFullscreen(): void {
+  const ch = getBroadcastChannel();
+  ch?.postMessage({ type: "REQUEST_FULLSCREEN" } satisfies BroadcastMessage);
 }

@@ -2,6 +2,7 @@
 
 import {
   getBroadcastChannel,
+  sendBlackout,
   sendDisplaySettings,
   sendShowVerse,
   type BroadcastMessage,
@@ -71,6 +72,8 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"switch" | "register" | "settings">("switch");
   const [pptxDownloading, setPptxDownloading] = useState(false);
   const [pptxSelectOpen, setPptxSelectOpen] = useState(false);
+  /** 表示画面のブラックアウト状態（BLACKOUT_STATE で同期） */
+  const [blackoutOn, setBlackoutOn] = useState(false);
   /** 箇所ID -> 選択した節のインデックス（0始まり） */
   const [pptxSelectedVerses, setPptxSelectedVerses] = useState<Map<string, Set<number>>>(new Map());
   /** モーダル内のPPT用表示設定（モーダルを開いた時点の表示設定で初期化） */
@@ -119,6 +122,9 @@ export default function AdminPage() {
           passageId: msg.passageId,
           verseIndex: msg.verseIndex,
         });
+      }
+      if (msg?.type === "BLACKOUT_STATE") {
+        setBlackoutOn(msg.on);
       }
     };
     ch.addEventListener("message", handler);
@@ -321,7 +327,7 @@ export default function AdminPage() {
               </div>
             )}
             <div className="mb-5 sm:mb-6">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <button
                   type="button"
                   onClick={handlePrev}
@@ -338,9 +344,26 @@ export default function AdminPage() {
                 >
                   後
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !blackoutOn;
+                    sendBlackout(next);
+                    setBlackoutOn(next);
+                  }}
+                  className={`min-h-[48px] px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg font-medium text-base transition ${
+                    blackoutOn
+                      ? "bg-stone-800 text-white border-2 border-stone-800 hover:bg-stone-700"
+                      : "bg-white text-stone-700 border-2 border-stone-300 hover:bg-stone-50"
+                  }`}
+                  title={blackoutOn ? "表示に戻す" : "ブラックアウト"}
+                  aria-pressed={blackoutOn}
+                >
+                  {blackoutOn ? "ブラックアウト中" : "ブラックアウト"}
+                </button>
               </div>
               <p className="text-sm text-stone-500 mt-2 sm:mt-2.5">
-                表示用ウィンドウで、前の御言葉／次の御言葉に切り替えます。同じ箇所内では前の節・次の節に、先頭・末尾では隣の箇所に移動します。
+                表示用ウィンドウで、前の御言葉／次の御言葉に切り替えます。同じ箇所内では前の節・次の節に、先頭・末尾では隣の箇所に移動します。ブラックアウトは1つのボタンでオン・オフを切り替え（表示用画面の左下でも操作可能）。全画面は表示用画面の左下ボタンで操作できます。
               </p>
             </div>
             {copyFeedback === "コピーできませんでした" && (

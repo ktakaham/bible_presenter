@@ -3,6 +3,7 @@
 import { VerseText } from "@/components/VerseText";
 import {
   getBroadcastChannel,
+  sendBlackoutState,
   sendCurrentState,
   type BroadcastMessage,
 } from "@/lib/broadcast";
@@ -113,6 +114,7 @@ export default function DisplayClient({
     )
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isBlackout, setIsBlackout] = useState(false);
   const [fontScale, setFontScaleState] = useState(DEFAULT_SCALE);
   const [theme, setThemeState] = useState<DisplayTheme>("dark");
   const [aspectRatio, setAspectRatioState] = useState<AspectRatioId>(DEFAULT_ASPECT_RATIO);
@@ -185,6 +187,21 @@ export default function DisplayClient({
     ch.addEventListener("message", handler);
     return () => ch.removeEventListener("message", handler);
   }, []);
+
+  useEffect(() => {
+    const ch = getBroadcastChannel();
+    if (!ch) return;
+    const handler = (e: MessageEvent<BroadcastMessage>) => {
+      const msg = e.data;
+      if (msg?.type === "BLACKOUT") setIsBlackout(msg.on);
+    };
+    ch.addEventListener("message", handler);
+    return () => ch.removeEventListener("message", handler);
+  }, []);
+
+  useEffect(() => {
+    sendBlackoutState(isBlackout);
+  }, [isBlackout]);
 
   const setFontScale = useCallback((v: number) => {
     const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, v));
@@ -324,6 +341,10 @@ export default function DisplayClient({
     <div
       className={`fixed inset-0 ${bgClass} flex flex-col items-center justify-center overflow-hidden select-none`}
     >
+      {isBlackout && (
+        <div className="fixed inset-0 bg-black z-20" aria-hidden="true" />
+      )}
+
       <div
         className={`flex flex-col items-center w-full flex-1 ${
           verticalAlign === "top"
@@ -370,7 +391,41 @@ export default function DisplayClient({
       <div
         className={`absolute bottom-[3vh] left-[2vw] right-[2vw] flex items-center justify-between pointer-events-none sm:pointer-events-auto`}
       >
-        <div className="flex items-center gap-1 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        <div className="flex items-center gap-2 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity z-30">
+          <button
+            type="button"
+            onClick={() => setIsBlackout((prev) => !prev)}
+            className={`flex items-center justify-center w-8 h-8 rounded ${isBlackout ? "bg-white/15 text-white border border-white/40 hover:bg-white/25" : isDark ? "bg-white/10 text-white hover:bg-white/20" : "bg-stone-200 text-stone-700 hover:bg-stone-300"}`}
+            title={isBlackout ? "表示に戻す" : "ブラックアウト"}
+            aria-label={isBlackout ? "表示に戻す" : "ブラックアウト"}
+          >
+            {isBlackout ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /><line x1="2" y1="3" x2="22" y2="17" /></svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /><line x1="4" y1="7" x2="20" y2="7" /></svg>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (document.fullscreenElement) {
+                document.exitFullscreen?.();
+                setIsFullscreen(false);
+              } else {
+                document.documentElement.requestFullscreen?.();
+                setIsFullscreen(true);
+              }
+            }}
+            className={`flex items-center justify-center w-8 h-8 rounded ${isBlackout ? "bg-white/15 text-white border border-white/40 hover:bg-white/25" : isDark ? "bg-white/10 text-white hover:bg-white/20" : "bg-stone-200 text-stone-700 hover:bg-stone-300"}`}
+            title={isFullscreen ? "全画面解除" : "全画面表示"}
+            aria-label={isFullscreen ? "全画面解除" : "全画面表示"}
+          >
+            {isFullscreen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16v3a2 2 0 0 0 2 2h3" /></svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" /></svg>
+            )}
+          </button>
           {prevId ? (
             <button
               type="button"
